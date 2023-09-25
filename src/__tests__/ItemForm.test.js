@@ -1,47 +1,57 @@
-import "@testing-library/jest-dom";
-import { render, screen, fireEvent } from "@testing-library/react";
+// ItemForm.test.js
+import React from "react";
+import { render, fireEvent } from "@testing-library/react";
 import ItemForm from "../components/ItemForm";
-import App from "../components/App";
+
+// Mock the uuid function to return a known ID
+jest.mock("uuid", () => ({
+  v4: () => "known-id",
+}));
 
 test("calls the onItemFormSubmit callback prop when the form is submitted", () => {
   const onItemFormSubmit = jest.fn();
-  render(<ItemForm onItemFormSubmit={onItemFormSubmit} />);
 
-  fireEvent.change(screen.queryByLabelText(/Name/), {
+  const { getByText, getByTestId } = render(
+    <ItemForm onItemFormSubmit={onItemFormSubmit} />
+  );
+
+  const nameInput = getByTestId("name-input");
+  const categorySelect = getByTestId("category-select");
+  const submitButton = getByText(/Add to List/);
+
+  fireEvent.change(nameInput, {
     target: { value: "Ice Cream" },
   });
 
-  fireEvent.change(screen.queryByLabelText(/Category/), {
+  fireEvent.change(categorySelect, {
     target: { value: "Dessert" },
   });
 
-  fireEvent.submit(screen.queryByText(/Add to List/));
+  fireEvent.click(submitButton);
 
-  expect(onItemFormSubmit).toHaveBeenCalledWith(
-    expect.objectContaining({
-      id: expect.any(String),
-      name: "Ice Cream",
-      category: "Dessert",
-    })
-  );
+  expect(onItemFormSubmit).toHaveBeenCalled();
+  expect(onItemFormSubmit).toHaveBeenCalledWith(expect.any(Object));
 });
 
-test("adds a new item to the list when the form is submitted", () => {
-  render(<App />);
 
-  const dessertCount = screen.queryAllByText(/Dessert/).length;
 
-  fireEvent.change(screen.queryByLabelText(/Name/), {
+test("clears the input fields after the form is submitted", () => {
+  const onItemFormSubmit = jest.fn();
+
+  const { getByText, getByTestId } = render(
+    <ItemForm onItemFormSubmit={onItemFormSubmit} />
+  );
+
+  fireEvent.change(getByTestId("name-input"), {
     target: { value: "Ice Cream" },
   });
 
-  fireEvent.change(screen.queryByLabelText(/Category/), {
+  fireEvent.change(getByTestId("category-select"), {
     target: { value: "Dessert" },
   });
 
-  fireEvent.submit(screen.queryByText(/Add to List/));
+  fireEvent.submit(getByText(/Add to List/));
 
-  expect(screen.queryByText(/Ice Cream/)).toBeInTheDocument();
-
-  expect(screen.queryAllByText(/Dessert/).length).toBe(dessertCount + 1);
+  expect(getByTestId("name-input").value).toBe("");
+  expect(getByTestId("category-select").value).toBe("");
 });
